@@ -8,7 +8,7 @@ docker start script template [docker-start.j2](docker-start.j2) is substitued du
 
 frr configuration template [frr.conf.j2](frr.conf.j2) is pre-built into container, variables in the template will be substituted during container start-up, with server local specific values, `/etc/frr/frr.conf` then gets generated out of it.
 
-Following parameters are hardcoded, will be the same on each server:
+Following parameters are hardcoded, will be the same on each server, you should change them according to your network environment:
 
 - `ASN_METALLB_LOCAL`: `4200099998`
 - `ASN_METALLB_REMOTE`: `4200099999`
