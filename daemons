@@ -1,0 +1,8 @@
+zebra=true
+zebra_options="-n -A 127.0.0.1"
+bgpd=true
+bgpd_options="-A 127.0.0.1"
+staticd=true
+staticd_options="-A 127.0.0.1"
+bfdd=true
+bfdd_options="-A 127.0.0.1"

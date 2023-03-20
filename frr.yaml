@@ -1,0 +1,10 @@
+name: frr
+container:
+  entrypoint: /sbin/tini
+  args:
+    - --
+    - /usr/lib/frr/docker-start
+  security:
+    writeableRootfs: true
+    writeableSysfs: true
+restart: always

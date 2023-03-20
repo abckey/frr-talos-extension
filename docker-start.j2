@@ -1,0 +1,89 @@
+#!/bin/bash
+
+set -e
+
+log() {
+    echo -e "[$(date +%Y-%m-%d-%H:%M:%S)][frr] $*" >&2
+}
+
+source /etc/frr/env.sh
+
+log "env"
+env
+
+log "echo \$PATH"
+echo $PATH
+
+    log "configs for peering with metallb speaker container on same host"
+    /sbin/ip netns add $NAMESPACE_METALLB || true
+    /sbin/ip link add veth-a type veth peer name veth-b || true
+    /sbin/ip link set veth-a netns $NAMESPACE_METALLB || true
+    /sbin/ip netns exec $NAMESPACE_METALLB /sbin/ip a a $PEER_IP_LOCAL/$PEER_IP_PREFIX dev veth-a || true
+    /sbin/ip a a $PEER_IP_REMOTE/$PEER_IP_PREFIX dev veth-b || true
+    /sbin/ip link set veth-b up || true
+    /sbin/ip link set veth-b mtu $INTERFACE_MTU || true
+    /sbin/ip netns exec $NAMESPACE_METALLB /sbin/ip link set veth-a up || true
+    /sbin/ip netns exec $NAMESPACE_METALLB /sbin/ip link set veth-a mtu $INTERFACE_MTU || true
+
+# generate ports list
+lshw -class network -json |jq '{"ports": [ .[] |select(has("businfo")) |select(.businfo|test("^pci.")) | .logicalname ]}'   > /ports.json
+log "cat /ports.json"
+cat /ports.json
+
+##generate frr.conf
+log 'j2 -e "" -o /etc/frr/frr.conf /etc/frr/frr.conf.j2 /ports.json'
+j2 -e "" -o /etc/frr/frr.conf /etc/frr/frr.conf.j2 /ports.json
+log "cat /etc/frr/frr.conf"
+cat /etc/frr/frr.conf
+
+## create vtysh.conf
+[ -r /etc/frr/vtysh.conf ] || touch /etc/frr/vtysh.conf
+
+chown -R frr:frr /etc/frr || true
+
+#enable syslogd based logging
+log "syslogd -n -O - &"
+syslogd -n -O - &
+
+log "starting frr..."
+/usr/lib/frr/frrinit.sh start
+
+##enable lldp
+log "mkdir -p /run/lldpd ||true"
+mkdir -p /run/lldpd ||true
+
+log "lldpd -I eth*"
+lldpd -I eth*
+
+log "ps -ef"
+ps -ef
+
+count=0
+while true
+do
+
+[ $count -lt 5 ] && log "-----------Start of this run in loop------------"
+
+
+sleep_time=60
+
+if [ $count -lt 5 ];then
+    log "vtysh -c 'show bgp vrf all summary'"
+    vtysh -c "show bgp vrf all summary wide" || true
+
+    log "vtysh -c 'show ip route'"
+    vtysh -c "show ip route" || true
+fi
+
+if [ $count -lt 5 ];then
+    log "sleep for $sleep_time seconds..."
+    log "-----------End of this run in loop------------"
+    count=$(( count + 1 ))
+fi
+
+sleep $sleep_time
+done
+
+# Sleep forever
+# log "sleep forever"
+# exec tail -f /dev/null
