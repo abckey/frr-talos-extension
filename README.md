@@ -27,9 +27,10 @@ To make the FRR system extenion to work, following dynamic varialbes need to be 
 
 Example machine config snippet:
 
-```
+```yaml
 machine:
-  env:                                                                                                                                                                                                               ASN_LOCAL: 4200001001
+  env:
+    ASN_LOCAL: 4200001001
     NODE_IP: 10.10.10.10
 ```
 
