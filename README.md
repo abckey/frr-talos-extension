@@ -39,7 +39,7 @@ Build the image locally
 docker build -t frr-talos-extension .
 ```
 
-
+Image is available at `abckey/frr-talos-extension`
 
 
 
